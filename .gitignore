@@ -1,0 +1,9 @@
+*.exe
+*.pdb
+*.ico
+.vs/
+bin/
+obj/
+*.user
+Thumbs.db
+Desktop.ini
