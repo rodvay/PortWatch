@@ -173,6 +173,8 @@ namespace PortWatch
         private long _prevTx = -1;
         private long _sessionRx = 0;
         private long _sessionTx = 0;
+        private double _lastDownBps = 0;
+        private double _lastUpBps = 0;
 
         private static Dictionary<int, string> BuildKnownPorts()
         {
@@ -319,14 +321,16 @@ namespace PortWatch
                 {
                     long dRx = Math.Max(0, curRx - _prevRx);
                     long dTx = Math.Max(0, curTx - _prevTx);
-                    ns.DownBytesPerSec = dRx / secs;
-                    ns.UpBytesPerSec = dTx / secs;
+                    _lastDownBps = dRx / secs;
+                    _lastUpBps = dTx / secs;
                     _sessionRx += dRx;
                     _sessionTx += dTx;
                     _prevRx = curRx;
                     _prevTx = curTx;
                     _speedWatch.Restart();
                 }
+                ns.DownBytesPerSec = _lastDownBps;
+                ns.UpBytesPerSec = _lastUpBps;
             }
             ns.SessionDownBytes = _sessionRx;
             ns.SessionUpBytes = _sessionTx;
@@ -594,7 +598,9 @@ namespace PortWatch
             double kb = bytesPerSec / 1024.0;
             if (kb < 1024.0) return Loc.F("{0:0.0} KB/s", kb);
             double mb = kb / 1024.0;
-            return Loc.F("{0:0.00} MB/s", mb);
+            if (mb < 1024.0) return Loc.F("{0:0.00} MB/s", mb);
+            double gb = mb / 1024.0;
+            return Loc.F("{0:0.00} GB/s", gb);
         }
 
         public static PortSnapshot BuildDemoSnapshot()

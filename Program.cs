@@ -142,6 +142,12 @@ namespace PortWatch
             Invalidate();
         }
 
+        public void ResetScroll()
+        {
+            _scrollY = 0;
+            Invalidate();
+        }
+
         private void RebuildFonts()
         {
             DisposeFonts();
@@ -272,14 +278,19 @@ namespace PortWatch
                 if (idx >= 0 && idx < _items.Count)
                 {
                     _hoverRow = idx;
+                    PortEntry it = _items[idx];
+                    bool killEnabled = !it.IsCriticalSystem;
+                    bool blkEnabled = !it.IsCriticalSystem && !string.IsNullOrEmpty(it.ExePath);
+                    bool dirEnabled = !string.IsNullOrEmpty(it.ExePath);
+
                     int xP, wP, xL, wL, xR, wR, xS, wS, xPr, wPr, xA, wA;
                     ComputeColumns(out xP, out wP, out xL, out wL, out xR, out wR, out xS, out wS, out xPr, out wPr, out xA, out wA);
                     int ry = HeaderH + idx * RowH - _scrollY;
                     Rectangle rKill, rBlock, rDir;
                     GetRowActionRects(ry, xA, wA, out rKill, out rBlock, out rDir);
-                    if (rKill.Contains(pt)) _hoverAction = RowActionKind.Kill;
-                    else if (rBlock.Contains(pt)) _hoverAction = RowActionKind.BlockToggle;
-                    else if (rDir.Contains(pt)) _hoverAction = RowActionKind.OpenFolder;
+                    if (killEnabled && rKill.Contains(pt)) _hoverAction = RowActionKind.Kill;
+                    else if (blkEnabled && rBlock.Contains(pt)) _hoverAction = RowActionKind.BlockToggle;
+                    else if (dirEnabled && rDir.Contains(pt)) _hoverAction = RowActionKind.OpenFolder;
                 }
             }
 
@@ -325,6 +336,16 @@ namespace PortWatch
                 _dragStartY = e.Y;
                 _dragStartScroll = _scrollY;
                 Capture = true;
+                return;
+            }
+            if (e.Button == MouseButtons.Left && MaxScroll > 0 && e.X >= Width - ScrollBarW - S(6) && e.Y > HeaderH)
+            {
+                int trackTop = HeaderH + S(4);
+                int trackH = Math.Max(1, Height - HeaderH - S(8));
+                double frac = Math.Max(0.0, Math.Min(1.0, (double)(e.Y - trackTop) / trackH));
+                _scrollY = (int)Math.Round(frac * MaxScroll);
+                ClampScroll();
+                Invalidate();
                 return;
             }
 
@@ -646,7 +667,7 @@ namespace PortWatch
 
     internal sealed class MainForm : Form
     {
-        private const string AppVersion = "1.0.0";
+        private const string AppVersion = "1.0.1";
 
         private readonly LaunchConfig _launch;
         private readonly PortWatchSettings _cfg;
@@ -723,17 +744,22 @@ namespace PortWatch
 
             _pollTimer = new System.Windows.Forms.Timer();
             _pollTimer.Interval = Math.Max(1000, _cfg.RefreshMs);
-            _pollTimer.Tick += delegate { TriggerRefresh(); };
+            _pollTimer.Tick += delegate
+            {
+                if (!string.IsNullOrEmpty(_statusToast) && DateTime.UtcNow >= _toastUntil)
+                {
+                    _statusToast = "";
+                    Invalidate();
+                }
+                TriggerRefresh(false);
+            };
 
             if (_launch.DemoMode)
             {
                 _snapshot = NetworkEngine.BuildDemoSnapshot();
                 ApplyFilterAndBind();
             }
-            else
-            {
-                _pollTimer.Start();
-            }
+            _pollTimer.Start();
         }
 
         private int S(float v) { return (int)Math.Round(v * _scale); }
@@ -829,7 +855,22 @@ namespace PortWatch
             _searchBox.TextChanged += delegate
             {
                 ApplyFilterAndBind();
+                if (_table != null) _table.ResetScroll();
                 Invalidate();
+            };
+            _searchBox.KeyDown += delegate(object s, KeyEventArgs ke)
+            {
+                if (ke.KeyCode == Keys.Escape)
+                {
+                    ke.SuppressKeyPress = true;
+                    if (!string.IsNullOrEmpty(_searchBox.Text)) _searchBox.Text = "";
+                    else { _searchBox.Visible = false; if (_table != null) _table.Focus(); Invalidate(); }
+                }
+                else if (ke.KeyCode == Keys.Enter)
+                {
+                    ke.SuppressKeyPress = true;
+                    if (_table != null) _table.Focus();
+                }
             };
             _searchBox.GotFocus += delegate { Invalidate(); };
             _searchBox.LostFocus += delegate
@@ -914,7 +955,7 @@ namespace PortWatch
             WinNative.AllowWakeMessage(Handle);
             UpdateSearchCue();
             LayoutChildren();
-            if (!_launch.DemoMode) TriggerRefresh();
+            if (!_launch.DemoMode) TriggerRefresh(true);
             SyncHudWindow();
         }
 
@@ -974,18 +1015,13 @@ namespace PortWatch
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            if (e.KeyCode == Keys.F5) { TriggerRefresh(); e.Handled = true; }
+            if (e.KeyCode == Keys.F5) { TriggerRefresh(true); ShowToast(Loc.T(_lang, "Refreshed.", "Yenilendi.", "已刷新。")); e.Handled = true; }
             else if (e.Control && e.KeyCode == Keys.F)
             {
                 _searchBox.Visible = true;
                 _searchBox.Focus();
                 _searchBox.SelectAll();
                 Invalidate();
-                e.Handled = true;
-            }
-            else if (e.KeyCode == Keys.Escape && _searchBox.Focused && !string.IsNullOrEmpty(_searchBox.Text))
-            {
-                _searchBox.Text = "";
                 e.Handled = true;
             }
         }
@@ -1004,15 +1040,21 @@ namespace PortWatch
             if (disposing) DisposeFonts();
         }
 
+        private int ComputeSearchW()
+        {
+            int dyn = ClientSize.Width - S(725);
+            return Math.Max(S(165), Math.Min(S(230), dyn));
+        }
+
         private void LayoutChildren()
         {
             if (_searchBox == null || _table == null) return;
             int pad = S(16);
             int toolbarY = S(142);
-            int searchW = S(230);
+            int searchW = ComputeSearchW();
             int searchH = S(32);
 
-            _searchBox.SetBounds(pad + S(28), toolbarY + S(7), searchW - S(50), S(20));
+            _searchBox.SetBounds(pad + S(28), toolbarY + S(7), Math.Max(S(80), searchW - S(50)), S(20));
 
             int tableY = toolbarY + searchH + S(12);
             int footerH = S(42);
@@ -1027,9 +1069,9 @@ namespace PortWatch
                 WinNative.SetCueBanner(_searchBox.Handle, cue);
         }
 
-        private void TriggerRefresh()
+        private void TriggerRefresh(bool force)
         {
-            if (_paused || _launch.DemoMode) return;
+            if ((!force && _paused) || _launch.DemoMode) return;
             if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) return;
 
             ThreadPool.QueueUserWorkItem(delegate
@@ -1163,7 +1205,7 @@ namespace PortWatch
                     ShowToast(Loc.T(_lang, "Killed " + e.ProcessName + " (#" + e.Pid + ")",
                         "Sonlandırıldı: " + e.ProcessName + " (#" + e.Pid + ")",
                         "已结束进程: " + e.ProcessName + " (#" + e.Pid + ")"));
-                    TriggerRefresh();
+                    TriggerRefresh(true);
                 }
                 else
                 {
@@ -1229,7 +1271,7 @@ namespace PortWatch
                                     ShowToast(wantBlock
                                         ? Loc.T(_lang, "Firewall blocked: " + targetName, "Güvenlik Duvarı engelledi: " + targetName, "已通过防火墙拦截: " + targetName)
                                         : Loc.T(_lang, "Firewall unblocked: " + targetName, "Engel kaldırıldı: " + targetName, "已从防火墙放行: " + targetName));
-                                    TriggerRefresh();
+                                    TriggerRefresh(true);
                                 }
                                 else ShowToast(Loc.T(_lang, "Firewall update failed.", "Güvenlik Duvarı güncellenemedi.", "防火墙规则更新失败。"));
                             });
@@ -1427,13 +1469,7 @@ namespace PortWatch
                 using (SolidBrush bv = new SolidBrush(UiTheme.Emerald))
                     g.DrawString(verTxt, _fVer, bv, verRc, sfCenter);
 
-                string subTxt = Loc.T(_lang, "TCP/UDP Ports · Live Speed · Reversible Firewall",
-                    "TCP/UDP Portlar · Canlı Hız · Güvenlik Duvarı",
-                    "TCP/UDP 端口 · 实时网速 · 可逆防火墙拦截");
-                using (SolidBrush bs = new SolidBrush(UiTheme.Muted))
-                    g.DrawString(subTxt, _fSub, bs, new RectangleF(titleX, S(31), S(340), S(18)), sfNear);
-
-                // Header Right Controls (right-to-left dynamic layout)
+                // Header Right Controls (right-to-left dynamic layout FIRST so subtitle never overlaps)
                 int rx = right;
                 int btnH = S(28);
                 int btnY = (hdrH - btnH) / 2;
@@ -1480,6 +1516,14 @@ namespace PortWatch
                 Rectangle hudRc = new Rectangle(rx - hudW, btnY, hudW, btnH);
                 DrawHeaderPill(g, "hdr_hud", hudRc, hudTxt, _cfg.NetHudEnabled ? UiTheme.Emerald : UiTheme.Cyan, _cfg.NetHudEnabled, sfCenter);
 
+                // Subtitle clamped cleanly against leftmost header pill
+                string subTxt = Loc.T(_lang, "TCP/UDP Ports · Live Speed · Reversible Firewall",
+                    "TCP/UDP Portlar · Canlı Hız · Güvenlik Duvarı",
+                    "TCP/UDP 端口 · 实时网速 · 可逆防火墙拦截");
+                int subMaxW = Math.Max(S(80), hudRc.Left - titleX - S(12));
+                using (SolidBrush bs = new SolidBrush(UiTheme.Muted))
+                    g.DrawString(subTxt, _fSub, bs, new RectangleF(titleX, S(31), subMaxW, S(18)), sfNear);
+
                 // ── 2. KPI SUMMARY CARDS (4 clickable cards) ──
                 int kpiY = hdrH + S(12);
                 int kpiH = S(64);
@@ -1517,7 +1561,7 @@ namespace PortWatch
                 int tbH = S(32);
 
                 // Search box rounded frame + crisp vector search icon + GDI+ placeholder
-                Rectangle searchFrame = new Rectangle(pad, tbY, S(230), tbH);
+                Rectangle searchFrame = new Rectangle(pad, tbY, ComputeSearchW(), tbH);
                 _hitRects["search_box"] = searchFrame;
                 UiTheme.FillRounded(g, searchFrame, S(7), UiTheme.SurfaceAlt);
                 UiTheme.DrawRounded(g, searchFrame, S(7), _searchBox.Focused ? UiTheme.Cyan : UiTheme.Border, 1f);
@@ -1752,19 +1796,16 @@ namespace PortWatch
                 else
                     ShowToast(Loc.T(_lang, "Running as Administrator (full access).", "Yönetici olarak çalışıyor (tam yetki).", "已以管理员身份运行（完整权限）。"));
             }
-            else if (id == "kpi_listening") { _filterMode = (_filterMode == "listening") ? "all" : "listening"; ApplyFilterAndBind(); Invalidate(); }
-            else if (id == "kpi_established") { _filterMode = (_filterMode == "established") ? "all" : "established"; ApplyFilterAndBind(); Invalidate(); }
-            else if (id == "kpi_blocked") { _filterMode = (_filterMode == "blocked") ? "all" : "blocked"; ApplyFilterAndBind(); Invalidate(); }
-            else if (id.StartsWith("flt_")) { _filterMode = id.Substring(4); ApplyFilterAndBind(); Invalidate(); }
+            else if (id == "kpi_listening") { _filterMode = (_filterMode == "listening") ? "all" : "listening"; ApplyFilterAndBind(); if (_table != null) _table.ResetScroll(); Invalidate(); }
+            else if (id == "kpi_established") { _filterMode = (_filterMode == "established") ? "all" : "established"; ApplyFilterAndBind(); if (_table != null) _table.ResetScroll(); Invalidate(); }
+            else if (id == "kpi_blocked") { _filterMode = (_filterMode == "blocked") ? "all" : "blocked"; ApplyFilterAndBind(); if (_table != null) _table.ResetScroll(); Invalidate(); }
+            else if (id.StartsWith("flt_")) { _filterMode = id.Substring(4); ApplyFilterAndBind(); if (_table != null) _table.ResetScroll(); Invalidate(); }
             else if (id == "search_box") { _searchBox.Visible = true; _searchBox.Focus(); Invalidate(); }
             else if (id == "search_clear") { _searchBox.Text = ""; _searchBox.Visible = true; _searchBox.Focus(); Invalidate(); }
             else if (id == "tb_pause") { _paused = !_paused; Invalidate(); }
             else if (id == "tb_refresh")
             {
-                bool wasPaused = _paused;
-                _paused = false;
-                TriggerRefresh();
-                _paused = wasPaused;
+                TriggerRefresh(true);
                 ShowToast(Loc.T(_lang, "Refreshed.", "Yenilendi.", "已刷新。"));
             }
             else if (id == "ft_tray")
