@@ -667,7 +667,7 @@ namespace PortWatch
 
     internal sealed class MainForm : Form
     {
-        private const string AppVersion = "1.0.2";
+        private const string AppVersion = "1.0.3";
 
         private readonly LaunchConfig _launch;
         private readonly PortWatchSettings _cfg;
@@ -1054,7 +1054,7 @@ namespace PortWatch
             int searchW = ComputeSearchW();
             int searchH = S(32);
 
-            _searchBox.SetBounds(pad + S(28), toolbarY + S(7), Math.Max(S(80), searchW - S(50)), S(20));
+            _searchBox.SetBounds(pad + S(28), toolbarY + S(7), Math.Max(S(80), searchW - S(54)), S(20));
 
             int tableY = toolbarY + searchH + S(12);
             int footerH = S(42);
@@ -1170,7 +1170,12 @@ namespace PortWatch
                 }
                 if (File.Exists(e.ExePath))
                 {
-                    try { Process.Start("explorer.exe", "/select,\"" + e.ExePath + "\""); } catch { }
+                    try
+                    {
+                        string explorer = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+                        Process.Start(explorer, "/select,\"" + e.ExePath + "\"");
+                    }
+                    catch { }
                 }
                 else ShowToast(Loc.T(_lang, "Executable path not accessible.", "Dosya yoluna erişilemedi.", "无法访问该程序路径。"));
                 return;

@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/rodvay/PortWatch/releases/latest"><img src="https://img.shields.io/github/v/release/rodvay/PortWatch?style=flat-square&color=34d399" alt="最新版本"></a>
-  <img src="https://img.shields.io/badge/体积-~104%20KB-38bdf8?style=flat-square" alt="体积">
+  <img src="https://img.shields.io/badge/体积-~105%20KB-38bdf8?style=flat-square" alt="体积">
   <img src="https://img.shields.io/badge/系统-Windows%2010%20%2F%2011-0f172a?style=flat-square" alt="平台">
   <img src="https://img.shields.io/badge/依赖-零依赖单文件-a78bfa?style=flat-square" alt="零依赖">
   <a href="LICENSE"><img src="https://img.shields.io/badge/协议-MIT-fbbf24?style=flat-square" alt="MIT 协议"></a>
@@ -16,7 +16,7 @@
 
 ---
 
-**PortWatch** 是一款仅 **~104 KB** 的原生单文件 Windows 10/11 网络工具：实时查看所有 **TCP/UDP 端口占用与远程连接**、**一键结束占口进程**、显示 **实时上下行网速浮窗**，并支持 **一键可逆 Windows 防火墙拦截/放行** —— 无 Electron 臃肿、无后台遥测、绿色免安装。
+**PortWatch** 是一款仅 **~105 KB** 的原生单文件 Windows 10/11 网络工具：实时查看所有 **TCP/UDP 端口占用与远程连接**、**一键结束占口进程**、显示 **实时上下行网速浮窗**，并支持 **一键可逆 Windows 防火墙拦截/放行** —— 无 Electron 臃肿、无后台遥测、绿色免安装。
 
 > 告别反复输入 `netstat -ano | findstr :3000` 和 `taskkill`，更像是一款 100 KB 级、开箱即用的现代暗色版 TCPView + 迷你防火墙。
 

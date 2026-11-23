@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/rodvay/PortWatch/releases/latest"><img src="https://img.shields.io/github/v/release/rodvay/PortWatch?style=flat-square&color=34d399" alt="Release"></a>
-  <img src="https://img.shields.io/badge/size-~104%20KB-38bdf8?style=flat-square" alt="Size">
+  <img src="https://img.shields.io/badge/size-~105%20KB-38bdf8?style=flat-square" alt="Size">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0f172a?style=flat-square" alt="Platform">
   <img src="https://img.shields.io/badge/dependencies-Zero-a78bfa?style=flat-square" alt="Zero Dependencies">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-fbbf24?style=flat-square" alt="MIT License"></a>
@@ -16,7 +16,7 @@
 
 ---
 
-**PortWatch** is an ultra-lightweight (**~104 KB**), single-file native Windows 10/11 utility that lets you inspect **every live TCP/UDP port & connection**, **kill port-hogging processes in 1 click**, monitor **real-time network speed**, and **reversibly block/unblock any app in Windows Firewall** — with zero Electron bloat, zero telemetry, and zero installers.
+**PortWatch** is an ultra-lightweight (**~105 KB**), single-file native Windows 10/11 utility that lets you inspect **every live TCP/UDP port & connection**, **kill port-hogging processes in 1 click**, monitor **real-time network speed**, and **reversibly block/unblock any app in Windows Firewall** — with zero Electron bloat, zero telemetry, and zero installers.
 
 > Built for developers tired of running `netstat -ano | findstr :3000` + `taskkill /PID ...`, and power users who want an instant visual GlassWire/TCPView alternative in ~100 KB.
 
@@ -52,7 +52,7 @@ Uses only the built-in Windows .NET Framework 4.x C# compiler (`csc.exe`):
 
 ## Türkçe Özet
 
-**PortWatch**, Windows 10/11 için yalnızca **~104 KB** boyutunda, kurulumsuz, tek dosya yerel **TCP/UDP Port, Canlı Ağ Hızı ve Tek Tık Geri Alınabilir Güvenlik Duvarı** aracıdır:
+**PortWatch**, Windows 10/11 için yalnızca **~105 KB** boyutunda, kurulumsuz, tek dosya yerel **TCP/UDP Port, Canlı Ağ Hızı ve Tek Tık Geri Alınabilir Güvenlik Duvarı** aracıdır:
 - Geliştirme sunucularını (`3000`, `5173`, `5432`, `8080`, `11434`) ve aktif bağlantıları anında gösterir; takılı kalan portları kritik sistem süreçlerini koruyarak tek tıkla serbest bırakır.
 - İstenmeyen uygulamaların internet erişimini Windows Güvenlik Duvarı üzerinden tek tıkla engeller ve dilediğinizde tek tıkla geri açar.
 - İsteğe bağlı `0px` kenarlı, tıklama geçirgen ve serbestçe sürüklenebilir **Mini Ağ Hızı HUD** içerir.

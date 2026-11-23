@@ -122,17 +122,18 @@ namespace PortWatch
                 detail = "Executable path not found.";
                 return false;
             }
+            string netsh = Path.Combine(Environment.SystemDirectory, "netsh.exe");
             string safePath = exePath.Replace("\"", "");
             string baseName = BuildRuleBaseName(exePath);
             string outTxt1, outTxt2;
             // Remove any stale duplicates first
-            WinNative.RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"" + baseName + " (Out)\"", 6000, out outTxt1);
-            WinNative.RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"" + baseName + " (In)\"", 6000, out outTxt2);
+            WinNative.RunHiddenProcess(netsh, "advfirewall firewall delete rule name=\"" + baseName + " (Out)\"", 6000, out outTxt1);
+            WinNative.RunHiddenProcess(netsh, "advfirewall firewall delete rule name=\"" + baseName + " (In)\"", 6000, out outTxt2);
 
-            int rc1 = WinNative.RunHiddenProcess("netsh.exe",
+            int rc1 = WinNative.RunHiddenProcess(netsh,
                 "advfirewall firewall add rule name=\"" + baseName + " (Out)\" dir=out action=block program=\"" + safePath + "\" enable=yes profile=any",
                 8000, out outTxt1);
-            int rc2 = WinNative.RunHiddenProcess("netsh.exe",
+            int rc2 = WinNative.RunHiddenProcess(netsh,
                 "advfirewall firewall add rule name=\"" + baseName + " (In)\" dir=in action=block program=\"" + safePath + "\" enable=yes profile=any",
                 8000, out outTxt2);
             detail = (outTxt1 + " " + outTxt2).Trim();
@@ -143,10 +144,11 @@ namespace PortWatch
         {
             detail = "";
             if (string.IsNullOrEmpty(exePath)) return false;
+            string netsh = Path.Combine(Environment.SystemDirectory, "netsh.exe");
             string baseName = BuildRuleBaseName(exePath);
             string outTxt1, outTxt2;
-            int rc1 = WinNative.RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"" + baseName + " (Out)\"", 8000, out outTxt1);
-            int rc2 = WinNative.RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"" + baseName + " (In)\"", 8000, out outTxt2);
+            int rc1 = WinNative.RunHiddenProcess(netsh, "advfirewall firewall delete rule name=\"" + baseName + " (Out)\"", 8000, out outTxt1);
+            int rc2 = WinNative.RunHiddenProcess(netsh, "advfirewall firewall delete rule name=\"" + baseName + " (In)\"", 8000, out outTxt2);
             detail = (outTxt1 + " " + outTxt2).Trim();
             return rc1 == 0 || rc2 == 0;
         }
