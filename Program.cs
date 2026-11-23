@@ -667,7 +667,7 @@ namespace PortWatch
 
     internal sealed class MainForm : Form
     {
-        private const string AppVersion = "1.0.1";
+        private const string AppVersion = "1.0.2";
 
         private readonly LaunchConfig _launch;
         private readonly PortWatchSettings _cfg;

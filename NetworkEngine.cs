@@ -381,17 +381,37 @@ namespace PortWatch
             return 3;
         }
 
+        private static IntPtr AllocAndReadTable(bool isTcp, int af, int tableClass, out int outSize)
+        {
+            outSize = 0;
+            int size = 0;
+            if (isTcp) WinNative.GetExtendedTcpTable(IntPtr.Zero, ref size, true, af, tableClass, 0);
+            else WinNative.GetExtendedUdpTable(IntPtr.Zero, ref size, true, af, tableClass, 0);
+            if (size <= 0) return IntPtr.Zero;
+
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                int alloc = size + 4096;
+                IntPtr buf = Marshal.AllocHGlobal(alloc);
+                int req = alloc;
+                uint ret = isTcp
+                    ? WinNative.GetExtendedTcpTable(buf, ref req, true, af, tableClass, 0)
+                    : WinNative.GetExtendedUdpTable(buf, ref req, true, af, tableClass, 0);
+                if (ret == 0) { outSize = req; return buf; }
+                Marshal.FreeHGlobal(buf);
+                if (ret == 122 && req > size) { size = req; continue; } // ERROR_INSUFFICIENT_BUFFER
+                return IntPtr.Zero;
+            }
+            return IntPtr.Zero;
+        }
+
         private void ReadTcpV4(List<PortEntry> target, HashSet<string> blockedExes)
         {
-            int size = 0;
-            WinNative.GetExtendedTcpTable(IntPtr.Zero, ref size, true, WinNative.AF_INET, WinNative.TCP_TABLE_OWNER_PID_ALL, 0);
-            if (size <= 0) return;
-
-            IntPtr buf = Marshal.AllocHGlobal(size);
+            int size;
+            IntPtr buf = AllocAndReadTable(true, WinNative.AF_INET, WinNative.TCP_TABLE_OWNER_PID_ALL, out size);
+            if (buf == IntPtr.Zero) return;
             try
             {
-                if (WinNative.GetExtendedTcpTable(buf, ref size, true, WinNative.AF_INET, WinNative.TCP_TABLE_OWNER_PID_ALL, 0) != 0)
-                    return;
                 int count = Marshal.ReadInt32(buf);
                 IntPtr rowPtr = new IntPtr(buf.ToInt64() + 4);
                 int rowSize = Marshal.SizeOf(typeof(WinNative.MIB_TCPROW_OWNER_PID));
@@ -429,15 +449,11 @@ namespace PortWatch
 
         private void ReadTcpV6(List<PortEntry> target, HashSet<string> blockedExes)
         {
-            int size = 0;
-            WinNative.GetExtendedTcpTable(IntPtr.Zero, ref size, true, WinNative.AF_INET6, WinNative.TCP_TABLE_OWNER_PID_ALL, 0);
-            if (size <= 0) return;
-
-            IntPtr buf = Marshal.AllocHGlobal(size);
+            int size;
+            IntPtr buf = AllocAndReadTable(true, WinNative.AF_INET6, WinNative.TCP_TABLE_OWNER_PID_ALL, out size);
+            if (buf == IntPtr.Zero) return;
             try
             {
-                if (WinNative.GetExtendedTcpTable(buf, ref size, true, WinNative.AF_INET6, WinNative.TCP_TABLE_OWNER_PID_ALL, 0) != 0)
-                    return;
                 int count = Marshal.ReadInt32(buf);
                 IntPtr rowPtr = new IntPtr(buf.ToInt64() + 4);
                 int rowSize = Marshal.SizeOf(typeof(WinNative.MIB_TCP6ROW_OWNER_PID));
@@ -475,15 +491,11 @@ namespace PortWatch
 
         private void ReadUdpV4(List<PortEntry> target, HashSet<string> blockedExes)
         {
-            int size = 0;
-            WinNative.GetExtendedUdpTable(IntPtr.Zero, ref size, true, WinNative.AF_INET, WinNative.UDP_TABLE_OWNER_PID, 0);
-            if (size <= 0) return;
-
-            IntPtr buf = Marshal.AllocHGlobal(size);
+            int size;
+            IntPtr buf = AllocAndReadTable(false, WinNative.AF_INET, WinNative.UDP_TABLE_OWNER_PID, out size);
+            if (buf == IntPtr.Zero) return;
             try
             {
-                if (WinNative.GetExtendedUdpTable(buf, ref size, true, WinNative.AF_INET, WinNative.UDP_TABLE_OWNER_PID, 0) != 0)
-                    return;
                 int count = Marshal.ReadInt32(buf);
                 IntPtr rowPtr = new IntPtr(buf.ToInt64() + 4);
                 int rowSize = Marshal.SizeOf(typeof(WinNative.MIB_UDPROW_OWNER_PID));
@@ -519,15 +531,11 @@ namespace PortWatch
 
         private void ReadUdpV6(List<PortEntry> target, HashSet<string> blockedExes)
         {
-            int size = 0;
-            WinNative.GetExtendedUdpTable(IntPtr.Zero, ref size, true, WinNative.AF_INET6, WinNative.UDP_TABLE_OWNER_PID, 0);
-            if (size <= 0) return;
-
-            IntPtr buf = Marshal.AllocHGlobal(size);
+            int size;
+            IntPtr buf = AllocAndReadTable(false, WinNative.AF_INET6, WinNative.UDP_TABLE_OWNER_PID, out size);
+            if (buf == IntPtr.Zero) return;
             try
             {
-                if (WinNative.GetExtendedUdpTable(buf, ref size, true, WinNative.AF_INET6, WinNative.UDP_TABLE_OWNER_PID, 0) != 0)
-                    return;
                 int count = Marshal.ReadInt32(buf);
                 IntPtr rowPtr = new IntPtr(buf.ToInt64() + 4);
                 int rowSize = Marshal.SizeOf(typeof(WinNative.MIB_UDP6ROW_OWNER_PID));
