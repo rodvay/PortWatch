@@ -12,6 +12,7 @@
   <img src="https://img.shields.io/badge/系统-Windows%2010%20%2F%2011-0f172a?style=flat-square" alt="平台">
   <img src="https://img.shields.io/badge/依赖-零依赖单文件-a78bfa?style=flat-square" alt="零依赖">
   <a href="LICENSE"><img src="https://img.shields.io/badge/协议-MIT-fbbf24?style=flat-square" alt="MIT 协议"></a>
+  <a href="https://linux.do"><img src="https://img.shields.io/badge/开源社区-LINUX%20DO-1C1C1E?style=flat-square&logo=linux&logoColor=38BDF8" alt="LINUX DO 社区"></a>
 </p>
 
 ---
@@ -59,6 +60,10 @@
 - [**CorePulse**](https://github.com/rodvay/CorePulse) — 硬件温度监控、PWM 风扇曲线与 32-bit 游戏顶栏 HUD
 - [**PortWatch**](https://github.com/rodvay/PortWatch) — TCP/UDP 端口占用查杀、迷你网速浮窗与可逆防火墙
 - [**LumiBar**](https://github.com/rodvay/LumiBar) — DDC/CI 多显示器硬件亮度调节、护眼色温与智能防休眠定时
+
+## 社区与友情链接
+
+- 感谢 **[LINUX DO](https://linux.do)** 社区的开源分享氛围与各位佬友的支持与反馈！
 
 ## 开源协议
 
